@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Moje Kartice</title>
+    <script src="https://jsdelivr.net"></script>
+    <script src="https://cloudflare.com"></script>
+    <script src="https://unpkg.com" type="text/javascript"></script>
+    <style>
+        :root { --bg: #f2f2f7; --card-bg: #ffffff; --text: #1c1c1e; --primary: #007aff; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; padding: 16px; color: var(--text); padding-bottom: 80px; }
+        h1 { text-align: center; font-size: 22px; margin: 5px 0 15px 0; }
+        
+        /* Kontrole na vrhu */
+        .top-controls { display: flex; gap: 8px; margin-bottom: 15px; }
+        .top-controls input { flex: 2; padding: 10px 12px; border: 1px solid #d1d1d6; border-radius: 10px; font-size: 15px; background: white; }
+        .top-controls select { flex: 1; padding: 10px; border: 1px solid #d1d1d6; border-radius: 10px; font-size: 14px; background: white; }
+        
+        .add-main-btn { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; margin-bottom: 18px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,122,255,0.25); }
+        
+        /* Mreža šarenih kartica */
+        .cards-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 25px; }
+        .grid-card { border-radius: 16px; padding: 20px 12px; color: white; font-weight: bold; font-size: 18px; text-align: center; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.12); display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 90px; position: relative; transition: transform 0.1s; word-break: break-word; }
+        .grid-card:active { transform: scale(0.96); }
+        .grid-card small { font-size: 11px; opacity: 0.85; font-weight: normal; margin-top: 6px; }
+
+        /* Modali (Pop-up prozori) */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; overflow-y: auto; }
+        .modal-content { background: white; margin: 20px auto; padding: 20px; border-radius: 18px; width: 90%; max-width: 450px; box-sizing: border-box; position: relative; }
+        .close-btn { position: absolute; top: 15px; right: 15px; background: #e5e5ea; border: none; width: 32px; height: 32px; border-radius: 50%; font-size: 18px; font-weight: bold; cursor: pointer; }
+
+        /* Forma za dodavanje */
+        .form-group { margin-bottom: 12px; }
+        label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 5px; color: #555; }
+        input[type="text"], select { width: 100%; padding: 12px; border: 1px solid #d1d1d6; border-radius: 10px; box-sizing: border-box; font-size: 16px; }
+        .color-row { display: flex; align-items: center; gap: 10px; }
+        input[type="color"] { width: 50px; height: 42px; border: none; border-radius: 8px; cursor: pointer; background: none; }
+        .scan-btn { background: #34c759; color: white; border: none; padding: 12px; width: 100%; border-radius: 10px; font-weight: bold; font-size: 15px; margin-bottom: 10px; cursor: pointer; }
+        #reader { width: 100%; margin-bottom: 10px; border-radius: 10px; overflow: hidden; display: none; }
+
+        /* Pregled kartice (Kasa mod) */
+        .cashier-modal .modal-content { background: #ffffff; max-width: 100%; width: 100%; min-height: 100%; margin: 0; border-radius: 0; padding-top: 50px; }
+        .cashier-header { padding: 15px; border-radius: 12px; color: white; text-align: center; font-size: 24px; font-weight: bold; margin-bottom: 20px; }
+        .code-display { background: #ffffff; border: 2px solid #f0f0f0; border-radius: 14px; padding: 20px 10px; text-align: center; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .code-display svg { max-width: 100%; height: auto; }
+        #qrcodeDisplay { display: flex; justify-content: center; margin: 10px 0; }
+        .code-number-text { font-family: monospace; font-size: 18px; letter-spacing: 2px; margin-top: 10px; font-weight: bold; color: #000; }
+        .brightness-tip { background: #fff9db; color: #856404; padding: 8px; border-radius: 8px; font-size: 12px; text-align: center; margin-bottom: 15px; }
+
+        /* Slike prednje i stražnje strane */
+        .photos-section { border-top: 1px solid #eee; padding-top: 15px; margin-top: 15px; }
+        .photo-box { background: #f9f9fb; border: 1px dashed #ccc; border-radius: 12px; padding: 12px; text-align: center; margin-bottom: 12px; }
+        .photo-box img { max-width: 100%; border-radius: 8px; margin-top: 8px; display: block; }
+        .photo-btn { background: #5856d6; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-size: 13px; cursor: pointer; margin-top: 5px; }
+        .delete-card-btn { background: #ff3b30; color: white; border: none; padding: 12px; width: 100%; border-radius: 10px; font-weight: bold; margin-top: 20px; cursor: pointer; }
+
+        /* Backup sekcija */
+        .backup-box { background: white; padding: 15px; border-radius: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); text-align: center; }
+        .backup-btns { display: flex; gap: 10px; margin-top: 10px; }
+        .backup-btns button { flex: 1; padding: 12px; border: none; border-radius: 10px; color: white; font-weight: bold; font-size: 14px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <h1>💳 Moje Kartice</h1>
+
+    <div class="top-controls">
+        <input type="text" id="searchInput" placeholder="🔍 Traži dućan..." oninput="renderCards()">
+        <select id="sortSelect" onchange="renderCards()">
+            <option value="usage">Najčešće</option>
+            <option value="alpha">A - Ž</option>
+            <option value="newest">Najnovije</option>
+        </select>
+    </div>
+
+    <button class="add-main-btn" onclick="openAddModal()">+ Dodaj novu karticu</button>
+
+    <div class="cards-grid" id="cardsGrid"></div>
+
+    <div class="backup-box">
+        <strong style="font-size: 14px; color: #555;">Sigurnosna kopija (Google Drive)</strong>
+        <div class="backup-btns">
+            <button style="background: #34c759;" onclick="exportCards()">☁️ Spremi kopiju</button>
+            <button style="background: #5856d6;" onclick="document.getElementById('importFile').click()">📥 Učitaj kopiju</button>
+        </div>
+        <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importCards(event)">
+    </div>
+
+    <!-- MODAL ZA DODAVANJE KARTICE -->
+    <div id="addModal" class="modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeAddModal()">✕</button>
+            <h2 style="margin-top:0;">Nova kartica</h2>
+            
+            <div class="form-group">
+                <label>Brzi odabir dućana:</label>
+                <select id="presetStore" onchange="applyPreset()">
+                    <option value="">-- Odaberi dućan ili upiši svoj --</option>
+                    <option value="dm|#004b93">dm</option>
+                    <option value="Konzum|#e30613">Konzum</option>
+                    <option value="Pevex|#008d36">Pevex</option>
+                    <option value="Offertissima|#ff6600">Offertissima</option>
+                    <option value="Lidl|#0050aa">Lidl</option>
+                    <option value="Kaufland|#e10915">Kaufland</option>
+                    <option value="Müller|#f36f21">Müller</option>
+                    <option value="Bipa|#e6007e">Bipa</option>
+                    <option value="Spar / Interspar|#00843d">Spar / Interspar</option>
+                    <option value="Pepco|#003399">Pepco</option>
+                    <option value="Plodine|#d71920">Plodine</option>
+                    <option value="Studenac|#f58220">Studenac</option>
+                    <option value="IKEA|#0058a3">IKEA</option>
+                    <option value="Decathlon|#0082c3">Decathlon</option>
+                    <option value="ZOO City|#78be20">ZOO City</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Naziv dućana:</label>
+                <input type="text" id="storeName" placeholder="Npr. dm, Konzum...">
+            </div>
+
+            <div class="form-group">
+                <label>Boja kartice:</label>
+                <div class="color-row">
+                    <input type="color" id="cardColor" value="#007aff">
+                    <span style="font-size: 13px; color: #666;">Klikni na kvadratić za bilo koju boju</span>
+                </div>
+            </div>
+
+            <button class="scan-btn" onclick="startScanner()">📷 Skeniraj kod kamerom</button>
+            <div id="reader"></div>
+
+            <div class="form-group">
+                <label>Broj kartice / tekst koda:</label>
+                <input type="text" id="cardNumber" placeholder="Upiši broj ili skeniraj iznad">
+            </div>
+
+            <div class="form-group">
+                <label>Vrsta koda:</label>
+                <select id="codeType">
+                    <option value="BARCODE">Klasični Barkod (crte)</option>
+                    <option value="QR">QR Kod (kvadratni)</option>
+                </select>
+            </div>
+
+            <button class="add-main-btn" style="margin-bottom:0;" onclick="saveNewCard()">Spremi karticu</button>
+        </div>
+    </div>
+
+    <!-- MODAL ZA PRIKAZ KARTICE NA KASI -->
+    <div id="viewModal" class="modal cashier-modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeViewModal()">✕</button>
+            <div id="viewHeader" class="cashier-header"></div>
