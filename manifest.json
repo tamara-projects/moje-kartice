@@ -1,0 +1,15 @@
+{
+  "name": "Moje Kartice",
+  "short_name": "Kartice",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f2f2f7",
+  "theme_color": "#007aff",
+  "icons": [
+    {
+      "src": "https://flaticon.com",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
